@@ -2,11 +2,21 @@
 #include <string.h>
 #include <errno.h>
 #include <wiringSerial.h>
+#include <wiringPi.h>
+#include <softPwm.h>
+#include <pthread.h>
+
 
 int main()
 {
 	int s;
 	int c;
+
+	if (wiringPiSetup() == -1)
+	{
+		printf("wiringPiSetup failed");
+		return 0;
+	}
 
 	if ((s = serailOpen("/dev/ttyUSB0", 115200)) < 0)
 	{
