@@ -6,7 +6,6 @@
 #include <softPwm.h>
 #include <pthread.h>
 
-
 int main()
 {
 	int s;
@@ -50,10 +49,10 @@ int main()
 			printf(": forward\n");
 			fflust(stdout);
 		}
-		else if (c == 122)
+		else if (c == 122)//'z'
 		{
 			putchar(c);
-			printf(": STIP\n");
+			printf(": STOP\n");
 			fflush(stdout);
 		}
 		else 
