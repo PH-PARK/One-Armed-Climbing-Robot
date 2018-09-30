@@ -1,4 +1,5 @@
 #include <stidio.h>
+#include <stdint.h>
 #include <string.h>
 #include <errno.h>
 #include <wiringSerial.h>
@@ -16,6 +17,7 @@ int main()
 {
 	int s;
 	int c;
+	uint8_t schedule;
 
 	if (wiringPiSetup() == -1)
 	{
@@ -39,13 +41,33 @@ int main()
 
 	for (;;)
 	{	
-		if (serialDataAvail(s) != -1)
+
+		switch (schedule)
 		{
+		case '0':
+			puts("schedule 0");
+			schedule++;
+			break;
+		case '1':
+			puts("schedule 1");
+			schedule++;
+			break;
+		case '2':
+			puts("schedule 2");
+			schedule=0;
+			break;
+		case '3': //
+			puts("Entering remote control mode.")
+			if (serialDataAvail(s) == -1)
+			{
+				puts("something wrong...");
+				break;
+			}
 			c = serailGethar(s);
 			if (c == 97)// 'a'
 			{
 				putchar(c); \
-				printf(": left\n");
+					printf(": left\n");
 				fflush(stdout);
 				softPwmWrite(LEFT_PWM, 0);
 				digitalWrite(LEFT_DIR, HIGH);
@@ -67,9 +89,9 @@ int main()
 				putchar(c);
 				printf(": backword\n");
 				fflust(stdout);
-				softPwmWrite(LEFT_PWM, 0);
+				softPwmWrite(LEFT_PWM, 30);
 				digitalWrite(LEFT_DIR, HIGH);
-				softPwmWrite(RIGHT_PWM, 0);
+				softPwmWrite(RIGHT_PWM, 30);
 				digitalWrite(RIGHT_DIR, LOW);
 			}
 			else if (c == 119)//'w'
@@ -82,24 +104,31 @@ int main()
 				softPwmWrite(RIGHT_PWM, 70);
 				digitalWrite(RIGHT_DIR, HIGH);
 			}
-			else if (c == 109)//'m'
+			/*else if (c == 109)//'m' // should be included in self driving mode.
 			{
 				putchar(c);
 				printf(": change mode\n");
 				fflush(stdout);
-			}
+			}*/
 			else if (c == 122)//'z'
 			{
 				putchar(c);
 				printf(": STOP\n");
+				puts("Entering Self-Driving mode.")
 				fflush(stdout);
 				softPwmWrite(LEFT_PWM, 0);
+				digitalWrite(LEFT_DIR, LOW);
 				softPwmWrite(RIGHT_PWM, 0);
+				digitalWrite(RIGHT_DIR, HIGH);
+				schedule = 0;
+				break;
 			}
 			else
 			{
+				puts("Got unidentified value.")
 				fflush(stdout);
 			}//if(c==)
-		}//if(serialDataAvail(s)
+			break;
+		}//switch
 	}//for (;;)
 }//main
