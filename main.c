@@ -44,26 +44,31 @@ int main()
 
 		switch (schedule)
 		{
-		case '0':
+		case 0:
 			puts("schedule 0");
 			schedule++;
 			break;
-		case '1':
+		case 1:
 			puts("schedule 1");
 			schedule++;
 			break;
-		case '2':
-			puts("schedule 2");
+		case 2:
+			puts("schedule 2");	
 			schedule=0;
 			break;
-		case '3': //
+		case 3: //
 			puts("Entering remote control mode.")
 			if (serialDataAvail(s) == -1)
 			{
 				puts("something wrong...");
 				break;
 			}
-			c = serailGethar(s);
+			if (serialDataAvail(s) == 0) 
+			{
+				puts("there is no data can read.");
+				break;
+			}
+			c = serialGetchar(s);
 			if (c == 97)// 'a'
 			{
 				putchar(c); \
