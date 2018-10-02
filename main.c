@@ -7,18 +7,22 @@
 #include <softPwm.h>
 #include <pthread.h>
 
-#define LEFT_PWM 0//physcial num11 
-#define LEFT_DIR 1//physcial num12
+#define LEFT_PWM 0//physical num11 
+#define LEFT_DIR 1//physical num12
+#define LEFT_GND 14//physical num14
 #define RIGHT_PWM 3//physical num15
-#define RIGHT_DIR 4//physcial num16
+#define RIGHT_DIR 4//physical num16
+#define RIGHT_GND 18//physical num18
 
 int main()
 {
     int s;
     int c;
-    uint8_t schedule =0;
+
+	uint8_t schedule = 4; //0;
 	uint8_t next_schedule =0;
-    printf("main\n");
+
+ //   printf("main\n");
 
     if(wiringPiSetup()==-1)
     {
@@ -31,21 +35,20 @@ int main()
 		fprintf(stderr,"Unable to open serial device : %s\n",strerror(errno));
 		return 1;
     }
-//    printf("1\n");
+
     pinMode(LEFT_PWM,PWM_OUTPUT);
     pinMode(LEFT_DIR,OUTPUT);
-//    printf("2\n");
     softPwmCreate(LEFT_PWM,0,100);
-//    printf("3\n");
+
     pinMode(RIGHT_PWM,PWM_OUTPUT);
     pinMode(RIGHT_DIR,OUTPUT);
     softPwmCreate(RIGHT_PWM,0,100);
-//    printf("4\n");
+
     for(;;)
     {
-//	printf("SSIBAL\n");
 		switch(schedule)
 		{
+			/*
 		case 0:
 			puts("schedule 0");
 			delay(100);
@@ -89,10 +92,10 @@ int main()
 		//	k++;
 			schedule=next_schedule;
 			break;
-		
+		*/
 		case 4:
 
-			puts("Now in remote control mode.");
+		//	puts("Now in remote control mode.");
 
 			if(serialDataAvail(s) ==-1)
 			{
@@ -102,16 +105,11 @@ int main()
 			else if(serialDataAvail(s) == 0)
 			{
 				puts("waiting...");
-	//			softPwmWrite(LEFT_PWM,0);
-	//			softPwmWrite(RIGHT_PWM,0);
 				delay(100);
 			}else
 			{
-	//		    softPwmWrite(LEFT_PWM,0);
-	//		    softPwmWrite(RIGHT_PWM,0);
-	//		    printf("passed the seralDataAvail()\n");
 				c = serialGetchar(s);
-	//		    printf("did serialgetchar()\n");
+
 				if(c == 100)//'d'
 				{
 					putchar(c);
@@ -152,7 +150,7 @@ int main()
 					softPwmWrite(RIGHT_PWM,40);
 					digitalWrite(RIGHT_DIR,HIGH);
 				}
-				else if(c == 109)//'m'
+				/*else if(c == 109)//'m'
 				{
 					putchar(c);
 					printf(": change mode\n");
@@ -160,15 +158,15 @@ int main()
 					softPwmWrite(LEFT_PWM,0);
 					softPwmWrite(RIGHT_PWM,0);
 					schedule=0;		
-				}	
-				else if(c == 122)//
+				}	*/
+				
+				else if(c == 122)//z
 				{
 					putchar(c);
-					printf(": STOP\n");
+					printf(": Go faster\n");
 					fflush(stdout);
-					softPwmWrite(LEFT_PWM,0);
-					softPwmWrite(RIGHT_PWM,0);
-			
+					softPwmWrite(LEFT_PWM,70);
+					softPwmWrite(RIGHT_PWM,70);
 				}
 				else if(c == 102) //'f'
 				{
