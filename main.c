@@ -1,174 +1,191 @@
-#include <stidio.h>
-#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
+#include <stdint.h>
 #include <errno.h>
 #include <wiringSerial.h>
 #include <wiringPi.h>
 #include <softPwm.h>
 #include <pthread.h>
 
-#define LEFT_PWM 0//physical num11
-#define LEFT_DIR 1//physical num12
+#define LEFT_PWM 0//physcial num11 
+#define LEFT_DIR 1//physcial num12
 #define RIGHT_PWM 3//physical num15
-#define RIGHT_DIR 4//physical num16
-
+#define RIGHT_DIR 4//physcial num16
 
 int main()
 {
-	int s;
-	int c;
-	uint8_t schedule;
-	uint8_t k;
+    int s;
+    int c;
+    uint8_t schedule =0;
+	uint8_t next_schedule =0;
+    printf("main\n");
 
-	if (wiringPiSetup() == -1)
-	{
+    if(wiringPiSetup()==-1)
+    {
 		printf("wiringPiSetup failed");
 		return 0;
-	}
-
-	if ((s = serailOpen("/dev/ttyUSB0", 115200)) < 0)
-	{
-		fprintf(stderr, "Unable to open serail device : %s\n", strerror(errno));
+    }
+    printf("wiringPi setup\n");
+    if((s = serialOpen("/dev/ttyUSB0",115200))<0)
+    {
+		fprintf(stderr,"Unable to open serial device : %s\n",strerror(errno));
 		return 1;
-	}
-
-	pinMode(LEFT_PWM, PWM_OUTPUT);
-	pinMode(RIGHT_PWM, PWM_OUTPUT);
-	softPwmCreate(LEFT_PWM, 0, 100);
-
-	pinMode(LEFT_DIR, OUTPUT);
-	pinMode(RIGHT_DIR, OUTPUT);
-	softPwmCreate(RIGHT_PWM, 0, 100);
-
-	for (;;)
-	{	
-
-		switch (schedule)
+    }
+//    printf("1\n");
+    pinMode(LEFT_PWM,PWM_OUTPUT);
+    pinMode(LEFT_DIR,OUTPUT);
+//    printf("2\n");
+    softPwmCreate(LEFT_PWM,0,100);
+//    printf("3\n");
+    pinMode(RIGHT_PWM,PWM_OUTPUT);
+    pinMode(RIGHT_DIR,OUTPUT);
+    softPwmCreate(RIGHT_PWM,0,100);
+//    printf("4\n");
+    for(;;)
+    {
+//	printf("SSIBAL\n");
+		switch(schedule)
 		{
 		case 0:
 			puts("schedule 0");
 			delay(100);
 			schedule=3;
-			k = 1;
+			next_schedule=1;
 			break;
 		case 1:
 			puts("schedule 1");
-			schedule = 3;
-			k = 2;
+			delay(100);
+			schedule=3;
+			next_schedule=2;
 			break;
 		case 2:
-			puts("schedule 2");	
-			schedule = 3;
-			k = 0;
+			puts("schedule 2");
+			delay(100);
+			schedule=3;
+			next_schedule=0;
 			break;
-		case 3:
-			puts("Checking buffer.");
-			if (serialDataAvail(s) == -1)
+		case 3://buffer checking
+			puts("schedule 3");
+			puts("chekcing buffer.");
+			if(serialDataAvail(s) == -1)
 			{
-				puts("Serial data error.");
+				puts("serial data error.");
 			}
-			else if (serialDataAvail(s) == 0)
+			if(serialDataAvail(s) == 0)
 			{
-				puts("Biffer is Empty.");
+				puts("buffer is empty.");
 			}
 			else
 			{
 				c = serialGetchar(s);
 				putchar(c);
-				if (c == 109)
+				if( c == 109)//'m'
 				{
-					puts("Changing Mode.");
-					schedule = 4;
+					puts("changing mode.");
+					schedule=4;
 					break;
 				}
 			}
-			schedule = k;
+		//	k++;
+			schedule=next_schedule;
 			break;
-			
-		case 4: //
-			puts("Entering remote control mode.")
-			if (serialDataAvail(s) == -1)
+		
+		case 4:
+
+			puts("Now in remote control mode.");
+
+			if(serialDataAvail(s) ==-1)
 			{
-				puts("something wrong...");
-				
+				puts("Something wrong...");
+				delay(100);	   
 			}
-			else if (serialDataAvail(s) == 0) 
+			else if(serialDataAvail(s) == 0)
 			{
 				puts("waiting...");
+	//			softPwmWrite(LEFT_PWM,0);
+	//			softPwmWrite(RIGHT_PWM,0);
 				delay(100);
-			}
-			else
+			}else
 			{
+	//		    softPwmWrite(LEFT_PWM,0);
+	//		    softPwmWrite(RIGHT_PWM,0);
+	//		    printf("passed the seralDataAvail()\n");
 				c = serialGetchar(s);
-				if (c == 97)// 'a'
+	//		    printf("did serialgetchar()\n");
+				if(c == 100)//'d'
 				{
-					putchar(c); \
-						printf(": left\n");
+					putchar(c);
+					printf(": left\n");
 					fflush(stdout);
-					softPwmWrite(LEFT_PWM, 0);
-					digitalWrite(LEFT_DIR, HIGH);
-					softPwmWrite(RIGHT_PWM, 70);
-					digitalWrite(RIGHT_DIR, HIGH);
+					softPwmWrite(LEFT_PWM,40);
+					digitalWrite(LEFT_DIR,HIGH);
+					softPwmWrite(RIGHT_PWM,40);
+					digitalWrite(RIGHT_DIR,HIGH);		
 				}
-				else if (c == 100)//'d'
+				else if(c == 97)//'a'
 				{
 					putchar(c);
 					printf(": right\n");
-					fflust(stdout);
-					softPwmWrite(LEFT_PWM, 70);
-					digitalWrite(LEFT_DIR, LOW);
-					softPwmWrite(RIGHT_PWM, 0);
-					digitalWrite(RIGHT_DIR, LOW);
+					fflush(stdout);
+					softPwmWrite(LEFT_PWM,40);
+					digitalWrite(LEFT_DIR,LOW);
+					softPwmWrite(RIGHT_PWM,40);
+					digitalWrite(RIGHT_DIR,LOW);
 				}
-				else if (c == 115)//'s'
+				else if(c == 119)//'s'
 				{
 					putchar(c);
-					printf(": backword\n");
-					fflust(stdout);
-					softPwmWrite(LEFT_PWM, 30);
-					digitalWrite(LEFT_DIR, HIGH);
-					softPwmWrite(RIGHT_PWM, 30);
-					digitalWrite(RIGHT_DIR, LOW);
+					printf(": backward\n");
+					fflush(stdout);
+					softPwmWrite(LEFT_PWM,40);
+					digitalWrite(LEFT_DIR,HIGH);
+					softPwmWrite(RIGHT_PWM,40);
+					digitalWrite(RIGHT_DIR,LOW);
 				}
-				else if (c == 119)//'w'
+				else if(c == 115)//'w'
 				{
 					putchar(c);
 					printf(": forward\n");
-					fflust(stdout);
-					softPwmWrite(LEFT_PWM, 70);
-					digitalWrite(LEFT_DIR, LOW);
-					softPwmWrite(RIGHT_PWM, 70);
-					digitalWrite(RIGHT_DIR, HIGH);
+					fflush(stdout);
+					softPwmWrite(LEFT_PWM,40);
+		 			digitalWrite(LEFT_DIR,LOW);
+					softPwmWrite(RIGHT_PWM,40);
+					digitalWrite(RIGHT_DIR,HIGH);
 				}
-				else if (c == 109)//'m' // should be included in self driving mode.
+				else if(c == 109)//'m'
 				{
 					putchar(c);
 					printf(": change mode\n");
-					softPwmWrite(LEFT_PWM, 0);
-					softPwmWrite(RIGHT_PWM, 0);
-					schedule = 0;
 					fflush(stdout);
-				}
-				/*else if (c == 122)//'z'
+					softPwmWrite(LEFT_PWM,0);
+					softPwmWrite(RIGHT_PWM,0);
+					schedule=0;		
+				}	
+				else if(c == 122)//
 				{
 					putchar(c);
 					printf(": STOP\n");
-					puts("Entering Self-Driving mode.")
 					fflush(stdout);
-					softPwmWrite(LEFT_PWM, 0);
-					digitalWrite(LEFT_DIR, LOW);
-					softPwmWrite(RIGHT_PWM, 0);
-					digitalWrite(RIGHT_DIR, HIGH);
-					schedule = 0;
-					break;
-				}*/
-				else
+					softPwmWrite(LEFT_PWM,0);
+					softPwmWrite(RIGHT_PWM,0);
+			
+				}
+				else if(c == 102) //'f'
 				{
-					puts("Got unidentified value.")
+					puts(": Neutral");
 					fflush(stdout);
-				}//if(c==)
-			}
+					softPwmWrite(LEFT_PWM,0);
+					softPwmWrite(RIGHT_PWM,0);
+   				}
+				else 
+				{
+					printf("flush\n");
+					fflush(stdout);
+				}//if(c==?)
+			}//if(serialDataAvail)
 			break;
 		}//switch
-	}//for (;;)
+	}//for
+	return 0;
 }//main
+
