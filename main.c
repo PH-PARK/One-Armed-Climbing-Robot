@@ -21,6 +21,7 @@ int main()
 
 	uint8_t schedule = 4; //0;
 	uint8_t next_schedule =0;
+	uint8_t w_continuity = 0;
 
  //   printf("main\n");
 
@@ -114,6 +115,7 @@ int main()
 				{
 					putchar(c);
 					printf(": left\n");
+					w_continuity = 0;
 					fflush(stdout);
 					softPwmWrite(LEFT_PWM,40);
 					digitalWrite(LEFT_DIR,HIGH);
@@ -124,6 +126,7 @@ int main()
 				{
 					putchar(c);
 					printf(": right\n");
+					w_continuity = 0;
 					fflush(stdout);
 					softPwmWrite(LEFT_PWM,40);
 					digitalWrite(LEFT_DIR,LOW);
@@ -134,6 +137,7 @@ int main()
 				{
 					putchar(c);
 					printf(": backward\n");
+					w_continuity = 0;
 					fflush(stdout);
 					softPwmWrite(LEFT_PWM,40);
 					digitalWrite(LEFT_DIR,HIGH);
@@ -144,11 +148,31 @@ int main()
 				{
 					putchar(c);
 					printf(": forward\n");
+				
+					w_continuity++;
 					fflush(stdout);
-					softPwmWrite(LEFT_PWM,40);
-		 			digitalWrite(LEFT_DIR,LOW);
-					softPwmWrite(RIGHT_PWM,40);
-					digitalWrite(RIGHT_DIR,HIGH);
+					if(w_continuity<15)
+					{
+						softPwmWrite(LEFT_PWM,40);
+		 				digitalWrite(LEFT_DIR,LOW);
+						softPwmWrite(RIGHT_PWM,40);
+						digitalWrite(RIGHT_DIR,HIGH);
+					}
+					else if(w_continuity >= 15) 
+					{
+						softPwmWrite(LEFT_PWM, 60);
+						digitalWrite(LEFT_DIR, LOW);
+						softPwmWrite(RIGHT_PWM, 60);
+						digitalWrite(RIGHT_DIR, HIGH);
+					}
+					else if (w_continuity >= 30) 
+					{
+						softPwmWrite(LEFT_PWM, 70);
+						digitalWrite(LEFT_DIR, LOW);
+						softPwmWrite(RIGHT_PWM, 70);
+						digitalWrite(RIGHT_DIR, HIGH);
+					}
+
 				}
 				/*else if(c == 109)//'m'
 				{
@@ -160,20 +184,22 @@ int main()
 					schedule=0;		
 				}	*/
 				
-				else if(c == 122)//z
+				/*else if(c == 122)//z
 				{
 					putchar(c);
 					printf(": Go faster\n");
 					fflush(stdout);
 					softPwmWrite(LEFT_PWM,70);
 					softPwmWrite(RIGHT_PWM,70);
-				}
+				}*/ 
 				else if(c == 102) //'f'
 				{
 					puts(": Neutral");
 					fflush(stdout);
+					w_continuity = 0;
 					softPwmWrite(LEFT_PWM,0);
 					softPwmWrite(RIGHT_PWM,0);
+					
    				}
 				else 
 				{
