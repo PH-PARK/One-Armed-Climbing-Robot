@@ -12,7 +12,7 @@
 #define LEFT_GND 14//physical num14
 #define RIGHT_PWM 3//physical num15
 #define RIGHT_DIR 4//physical num16
-#define RIGHT_GND 18//physical num18
+#define RIGHT_GND 20//physical num20
 
 int main()
 {
