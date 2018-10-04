@@ -114,7 +114,7 @@ int main()
 				if(c == 100)//'d'
 				{
 					putchar(c);
-					printf(": left\n");
+					printf(": right\n");
 					w_continuity = 0;
 					fflush(stdout);
 					softPwmWrite(LEFT_PWM,40);
@@ -125,7 +125,7 @@ int main()
 				else if(c == 97)//'a'
 				{
 					putchar(c);
-					printf(": right\n");
+					printf(": left\n");
 					w_continuity = 0;
 					fflush(stdout);
 					softPwmWrite(LEFT_PWM,40);
@@ -133,18 +133,18 @@ int main()
 					softPwmWrite(RIGHT_PWM,40);
 					digitalWrite(RIGHT_DIR,LOW);
 				}
-				else if(c == 119)//'s'
+				else if(c == 115)//'s'
 				{
 					putchar(c);
 					printf(": backward\n");
 					w_continuity = 0;
 					fflush(stdout);
 					softPwmWrite(LEFT_PWM,40);
-					digitalWrite(LEFT_DIR,HIGH);
+					digitalWrite(LEFT_DIR,LOW);
 					softPwmWrite(RIGHT_PWM,40);
-					digitalWrite(RIGHT_DIR,LOW);
+					digitalWrite(RIGHT_DIR,HIGH);
 				}
-				else if(c == 115)//'w'
+				else if(c == 119)//'w'
 				{
 					putchar(c);
 					printf(": forward\n");
@@ -154,24 +154,27 @@ int main()
 					if(w_continuity<15)
 					{
 						softPwmWrite(LEFT_PWM,40);
-		 				digitalWrite(LEFT_DIR,LOW);
+		 				digitalWrite(LEFT_DIR,HIGH);
 						softPwmWrite(RIGHT_PWM,40);
-						digitalWrite(RIGHT_DIR,HIGH);
+						digitalWrite(RIGHT_DIR,LOW);
+						puts("duty 40");
 					}
-					else if(w_continuity >= 15) 
+					else if(w_continuity >= 15 && w_continuity<30) 
 					{
 						softPwmWrite(LEFT_PWM, 60);
-						digitalWrite(LEFT_DIR, LOW);
+						digitalWrite(LEFT_DIR, HIGH);
 						softPwmWrite(RIGHT_PWM, 60);
-						digitalWrite(RIGHT_DIR, HIGH);
+						digitalWrite(RIGHT_DIR, LOW);
+						puts("duty 60");
 					}
 					else if (w_continuity >= 30) 
 					{
 						softPwmWrite(LEFT_PWM, 70);
-						digitalWrite(LEFT_DIR, LOW);
+						digitalWrite(LEFT_DIR, HIGH);
 						softPwmWrite(RIGHT_PWM, 70);
-						digitalWrite(RIGHT_DIR, HIGH);
-					}
+						digitalWrite(RIGHT_DIR, LOW);
+						puts("duty 70");
+						}
 
 				}
 				/*else if(c == 109)//'m'
