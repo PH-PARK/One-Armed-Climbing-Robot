@@ -7,6 +7,11 @@
 #include <softPwm.h>
 #include <pthread.h>
 
+#define __DEBUG__ //Show mesaages 
+#define DEVELOP // Enable develop mode
+#define SD // Enable self driving mode
+#define RC // Enable remote control mode
+
 #define LEFT_PWM 0//physical num11 
 #define LEFT_DIR 1//physical num12
 #define LEFT_GND 14//physical num14
@@ -14,28 +19,48 @@
 #define RIGHT_DIR 4//physical num16
 #define RIGHT_GND 20//physical num20
 
+#define MAX_DUTY 80
+#define MIN_DUTY -MAX_DUTY
+#define RAGULAR_DUTY 40
+
+void SelfDrivingMode(void);
+void RemoteControl(void);
+void DevelopMode(void);
+void CheckBuffer(void);
+void DoOrder(char);
+
+enum {SELF_DRIVING=1, REMOTE_CONTROL, DEVELOP_MODE};
+int schedule;
+
 int main()
 {
     int s;
     int c;
 
-	uint8_t schedule = 4; //0;
-	uint8_t next_schedule =0;
-	uint8_t w_continuity = 0;
-
- //   printf("main\n");
+#ifdef __DEBUG__
+	puts("main");
+#endif
 
     if(wiringPiSetup()==-1)
     {
 		printf("wiringPiSetup failed");
 		return 0;
     }
-    printf("wiringPi setup\n");
+#ifdef __DEBUG__
+	puts("WiringPi Setup");
+#endif
+
+#ifdef RC
     if((s = serialOpen("/dev/ttyUSB0",115200))<0)
     {
 		fprintf(stderr,"Unable to open serial device : %s\n",strerror(errno));
 		return 1;
     }
+#endif
+
+#ifdef __DEBUG__
+	puts("Serial Open");
+#endif
 
     pinMode(LEFT_PWM,PWM_OUTPUT);
     pinMode(LEFT_DIR,OUTPUT);
@@ -45,174 +70,243 @@ int main()
     pinMode(RIGHT_DIR,OUTPUT);
     softPwmCreate(RIGHT_PWM,0,100);
 
-    for(;;)
+#ifdef __DEBUG__
+	puts("Pin configuration");
+#endif
+
+#ifdef RC
+	schedule = REMOTE_CONTROL; // default mode is RMOTE_CONTROL mode
+#endif
+
+#ifdef DEVELOP
+	puts("*******************");
+	puts("Selct Mode");
+	puts("1. Self Driving Mode");
+	puts("2. Remote Control Mode");
+	puts("3. Develop Mode");
+	fputs(" >> ",stdout);
+	scanf("%d", schedule);
+#endif
+
+    while()
     {
 		switch(schedule)
 		{
-			/*
-		case 0:
-			puts("schedule 0");
-			delay(100);
-			schedule=3;
-			next_schedule=1;
+		case SELF_DRIVING:
+			SelfDrivingMode();
 			break;
-		case 1:
-			puts("schedule 1");
-			delay(100);
-			schedule=3;
-			next_schedule=2;
+
+		case REMOTE_CONTROL:
+			RemoteMode();
 			break;
-		case 2:
-			puts("schedule 2");
-			delay(100);
-			schedule=3;
-			next_schedule=0;
+		
+		case DEVELOP_CONTROL:
+			DevelopMode();
 			break;
-		case 3://buffer checking
-			puts("schedule 3");
-			puts("chekcing buffer.");
-			if(serialDataAvail(s) == -1)
+		}
+	}
+	return 0;
+}
+
+void SelfDrivingMode()
+{
+#ifdef __DEBUG__
+	puts("Self Driving Mode.");
+#endif
+
+	while ()
+	{
+
+		CheckBuffer();
+		if (schedule != SELF_DRIVING)
+		{
+			return;
+		}
+	}
+}
+
+void RemoteMode()
+{
+#ifdef __DEBUG__
+	puts("Check Buffer");
+#endif
+	if (serialDataAvail(s) == -1)
+	{
+#ifdef __DEBUG__
+		puts("Data is not available.");
+#endif
+		delay(100);
+	}
+	else if (serialDataAvail(s) == 0)
+	{
+#ifdef __DEBUG__
+		puts("Data not exist".);
+#endif
+		delay(100);
+	}
+	else
+	{
+#ifdef __DEBUG__
+		puts("Data exist.");
+#endif
+		c = serialGetchar(s);
+#ifdef __DEBUG__
+		printf("We got '%c'\n", c);
+#endif
+		DoOrder(c);
+		fflush(stdout);
+	}//if(serialDataAvail)
+}
+
+void DevelopMode()
+{
+	char ch = 0;
+	int duty = 0;
+
+	puts("*************************");
+	puts("Develop Mode");
+	printf("MAX_DUTY : %d\n", MAX_DUTY);
+	printf("MIN_DUTY : %d\n", MIN_DUTY);
+	puts("*************************");
+
+	while ()
+	{
+		puts("*******************");
+		puts("Duty : %d", duty);
+		puts("1. Change Duty");
+		puts("2. Change Mode");
+		puts("*******************");
+		fputs(" >> ", stdout);
+		scanf("%c", ch);
+		if (ch == 1)
+		{
+			puts("*******************");
+			puts("Duty : ");
+			fputs(" >> ", stdout);
+			scanf("%d", duty);
+			puts("*******************");
+
+			if (duty < MIN_DUTY)
 			{
-				puts("serial data error.");
+				puts("duty adjustment");
+				duty = MIN_DUTY;
 			}
-			if(serialDataAvail(s) == 0)
+			if (duty > MAX_DUTY)
 			{
-				puts("buffer is empty.");
+				puts("duty adjustment");
+				duty = MAX_DUTY;
+			}
+
+			if (duty < 0)
+			{
+				softPwmWrite(LEFT_PWM, -duty);
+				digitalWrite(LEFT_DIR, LOW);
+				softPwmWrite(RIGHT_PWM, -duty);
+				digitalWrite(RIGHT_DIR, LOW);
 			}
 			else
 			{
-				c = serialGetchar(s);
-				putchar(c);
-				if( c == 109)//'m'
-				{
-					puts("changing mode.");
-					schedule=4;
-					break;
-				}
+				softPwmWrite(LEFT_PWM, duty);
+				digitalWrite(LEFT_DIR, HIGH);
+				softPwmWrite(RIGHT_PWM, duty);
+				digitalWrite(RIGHT_DIR, HIGH);
 			}
-		//	k++;
-			schedule=next_schedule;
-			break;
-		*/
-		case 4:
 
-		//	puts("Now in remote control mode.");
+		}
+		else if (ch == 2)
+		{
+			puts("*******************");
+			puts("Exit Develop Mode");
+			puts("*******************");
+			schedule = SELF_DRIVING;
 
-			if(serialDataAvail(s) ==-1)
-			{
-				puts("Something wrong...");
-				delay(100);	   
-			}
-			else if(serialDataAvail(s) == 0)
-			{
-				puts("waiting...");
-				delay(100);
-			}else
-			{
-				c = serialGetchar(s);
+			return;
+		}
+	}
+}	
 
-				if(c == 100)//'d'
-				{
-					putchar(c);
-					printf(": right\n");
-					w_continuity = 0;
-					fflush(stdout);
-					softPwmWrite(LEFT_PWM,40);
-					digitalWrite(LEFT_DIR,HIGH);
-					softPwmWrite(RIGHT_PWM,40);
-					digitalWrite(RIGHT_DIR,HIGH);		
-				}
-				else if(c == 97)//'a'
-				{
-					putchar(c);
-					printf(": left\n");
-					w_continuity = 0;
-					fflush(stdout);
-					softPwmWrite(LEFT_PWM,40);
-					digitalWrite(LEFT_DIR,LOW);
-					softPwmWrite(RIGHT_PWM,40);
-					digitalWrite(RIGHT_DIR,LOW);
-				}
-				else if(c == 115)//'s'
-				{
-					putchar(c);
-					printf(": backward\n");
-					w_continuity = 0;
-					fflush(stdout);
-					softPwmWrite(LEFT_PWM,40);
-					digitalWrite(LEFT_DIR,LOW);
-					softPwmWrite(RIGHT_PWM,40);
-					digitalWrite(RIGHT_DIR,HIGH);
-				}
-				else if(c == 119)//'w'
-				{
-					putchar(c);
-					printf(": forward\n");
-				
-					w_continuity++;
-					fflush(stdout);
-					if(w_continuity<15)
-					{
-						softPwmWrite(LEFT_PWM,40);
-		 				digitalWrite(LEFT_DIR,HIGH);
-						softPwmWrite(RIGHT_PWM,40);
-						digitalWrite(RIGHT_DIR,LOW);
-						puts("duty 40");
-					}
-					else if(w_continuity >= 15 && w_continuity<30) 
-					{
-						softPwmWrite(LEFT_PWM, 60);
-						digitalWrite(LEFT_DIR, HIGH);
-						softPwmWrite(RIGHT_PWM, 60);
-						digitalWrite(RIGHT_DIR, LOW);
-						puts("duty 60");
-					}
-					else if (w_continuity >= 30) 
-					{
-						softPwmWrite(LEFT_PWM, 70);
-						digitalWrite(LEFT_DIR, HIGH);
-						softPwmWrite(RIGHT_PWM, 70);
-						digitalWrite(RIGHT_DIR, LOW);
-						puts("duty 70");
-						}
+void CheckBuffer()
+{
+	char c;
 
-				}
-				/*else if(c == 109)//'m'
-				{
-					putchar(c);
-					printf(": change mode\n");
-					fflush(stdout);
-					softPwmWrite(LEFT_PWM,0);
-					softPwmWrite(RIGHT_PWM,0);
-					schedule=0;		
-				}	*/
-				
-				/*else if(c == 122)//z
-				{
-					putchar(c);
-					printf(": Go faster\n");
-					fflush(stdout);
-					softPwmWrite(LEFT_PWM,70);
-					softPwmWrite(RIGHT_PWM,70);
-				}*/ 
-				else if(c == 102) //'f'
-				{
-					puts(": Neutral");
-					fflush(stdout);
-					w_continuity = 0;
-					softPwmWrite(LEFT_PWM,0);
-					softPwmWrite(RIGHT_PWM,0);
-					
-   				}
-				else 
-				{
-					printf("flush\n");
-					fflush(stdout);
-				}//if(c==?)
-			}//if(serialDataAvail)
-			break;
-		}//switch
-	}//for
-	return 0;
-}//main
+#ifdef __DEBUG__
+	puts("Check Buffer");
+	puts("Send 'm' if you want to chage mode to Rmote Control Mode.");
+#endif
+	if (serialDataAvail(s) == -1)
+	{
+		puts("serial data error.");
+	}
+	if (serialDataAvail(s) == 0)
+	{
+		puts("Buffer is Empty.");
+	}
+	else
+	{
+		c = serialGetchar(s);
+#ifdef __DEBUG__
+		puts("We got : '%c'",c);
+#endif
+		if (c == 'm')
+		{
+			puts("change mode to Remote Control Mode.");
+			schedule = REMMOTE_CONTROL;
+			return;
+		}
+	}
+}
 
+void DoOrder(char c)
+{
+	if (c == 'd')
+	{
+		printf(": right\n");
+		softPwmWrite(LEFT_PWM, 40);
+		digitalWrite(LEFT_DIR, HIGH);
+		softPwmWrite(RIGHT_PWM, 40);
+		digitalWrite(RIGHT_DIR, HIGH);
+	}
+	else if (c == 'a')
+	{
+		printf(": left\n");
+		softPwmWrite(LEFT_PWM, 40);
+		digitalWrite(LEFT_DIR, LOW);
+		softPwmWrite(RIGHT_PWM, 40);
+		digitalWrite(RIGHT_DIR, LOW);
+	}
+	else if (c == 's')
+	{
+		printf(": backward\n");
+		softPwmWrite(LEFT_PWM, 40);
+		digitalWrite(LEFT_DIR, LOW);
+		softPwmWrite(RIGHT_PWM, 40);
+		digitalWrite(RIGHT_DIR, HIGH);
+	}
+	else if (c == 'w')
+	{
+		printf(": forward\n");
+		softPwmWrite(LEFT_PWM, 40);
+		digitalWrite(LEFT_DIR, HIGH);
+		softPwmWrite(RIGHT_PWM, 40);
+		digitalWrite(RIGHT_DIR, LOW);
+	}	
+	else if(c == 'm')
+	{
+		printf(": change mode\n");
+		softPwmWrite(LEFT_PWM,0);
+		softPwmWrite(RIGHT_PWM,0);
+		schedule = DEVELOP_MODE;
+	}	
+
+	else if (c == 'f')
+	{
+		puts(": Neutral");
+		fflush(stdout);
+		softPwmWrite(LEFT_PWM, 0);
+		softPwmWrite(RIGHT_PWM, 0);
+	}
+	else
+	{
+		puts("Undefned OP code");
+	}
+}
