@@ -24,18 +24,18 @@
 #define RAGULAR_DUTY 40
 
 void SelfDrivingMode(void);
-void RemoteControl(void);
+void RemoteMode(void);
 void DevelopMode(void);
 void CheckBuffer(void);
 void DoOrder(char);
 
 enum {SELF_DRIVING=1, REMOTE_CONTROL, DEVELOP_MODE};
 int schedule;
+int s = 0;
 
 int main()
 {
-    int s;
-    int c;
+    int c=0;
 
 #ifdef __DEBUG__
 	puts("main");
@@ -85,10 +85,10 @@ int main()
 	puts("2. Remote Control Mode");
 	puts("3. Develop Mode");
 	fputs(" >> ",stdout);
-	scanf("%d", schedule);
+	scanf("%d", &schedule);
 #endif
 
-    while()
+    while(1)
     {
 		switch(schedule)
 		{
@@ -100,7 +100,7 @@ int main()
 			RemoteMode();
 			break;
 		
-		case DEVELOP_CONTROL:
+		case DEVELOP_MODE:
 			DevelopMode();
 			break;
 		}
@@ -114,7 +114,7 @@ void SelfDrivingMode()
 	puts("Self Driving Mode.");
 #endif
 
-	while ()
+	while (1)
 	{
 
 		CheckBuffer();
@@ -127,35 +127,39 @@ void SelfDrivingMode()
 
 void RemoteMode()
 {
+	char c = 0;
 #ifdef __DEBUG__
 	puts("Check Buffer");
 #endif
-	if (serialDataAvail(s) == -1)
+	while (1)
 	{
+		if (serialDataAvail(s) == -1)
+		{
 #ifdef __DEBUG__
-		puts("Data is not available.");
+			puts("Data is not available.");
 #endif
-		delay(100);
+			delay(100);
+		}
+		else if (serialDataAvail(s) == 0)
+		{
+#ifdef __DEBUG__
+			puts("Data not exist");
+#endif
+			delay(100);
+		}
+		else
+		{
+#ifdef __DEBUG__
+			puts("Data exist.");
+#endif
+			c = serialGetchar(s);
+#ifdef __DEBUG__
+			printf("We got '%c'\n", c);
+#endif
+			DoOrder(c);
+			fflush(stdout);
+		}//if(serialDataAvail)
 	}
-	else if (serialDataAvail(s) == 0)
-	{
-#ifdef __DEBUG__
-		puts("Data not exist".);
-#endif
-		delay(100);
-	}
-	else
-	{
-#ifdef __DEBUG__
-		puts("Data exist.");
-#endif
-		c = serialGetchar(s);
-#ifdef __DEBUG__
-		printf("We got '%c'\n", c);
-#endif
-		DoOrder(c);
-		fflush(stdout);
-	}//if(serialDataAvail)
 }
 
 void DevelopMode()
@@ -169,21 +173,21 @@ void DevelopMode()
 	printf("MIN_DUTY : %d\n", MIN_DUTY);
 	puts("*************************");
 
-	while ()
+	while (1)
 	{
 		puts("*******************");
-		puts("Duty : %d", duty);
+		printf("Duty : %d\n", duty);
 		puts("1. Change Duty");
 		puts("2. Change Mode");
 		puts("*******************");
 		fputs(" >> ", stdout);
-		scanf("%c", ch);
+		scanf("%c", &ch);
 		if (ch == 1)
 		{
 			puts("*******************");
 			puts("Duty : ");
 			fputs(" >> ", stdout);
-			scanf("%d", duty);
+			scanf("%d", &duty);
 			puts("*******************");
 
 			if (duty < MIN_DUTY)
@@ -227,7 +231,7 @@ void DevelopMode()
 
 void CheckBuffer()
 {
-	char c;
+	char c = 0;
 
 #ifdef __DEBUG__
 	puts("Check Buffer");
@@ -245,12 +249,12 @@ void CheckBuffer()
 	{
 		c = serialGetchar(s);
 #ifdef __DEBUG__
-		puts("We got : '%c'",c);
+		printf("We got : '%c'\n",c);
 #endif
 		if (c == 'm')
 		{
 			puts("change mode to Remote Control Mode.");
-			schedule = REMMOTE_CONTROL;
+			schedule = REMOTE_CONTROL;
 			return;
 		}
 	}
@@ -258,6 +262,7 @@ void CheckBuffer()
 
 void DoOrder(char c)
 {
+	
 	if (c == 'd')
 	{
 		printf(": right\n");
